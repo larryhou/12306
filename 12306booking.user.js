@@ -46,7 +46,6 @@ function withjQuery(callback, safe)
 		var script = document.createElement("script");
 		script.type = "text/javascript";
 		script.src = "https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js";
-		document.head.appendChild(script);
 
 		if(safe) 
 		{
