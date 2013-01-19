@@ -660,15 +660,14 @@ withjQuery(function($, window)
 		
 		var domain = "https://dynamic.12306.cn/otsweb";
 		
-		//login
 		var url = domain + "/loginAction.do?method=login";
-		var queryurl = "https://dynamic.12306.cn/otsweb/order/querySingleAction.do?method=init";
+		var queryurl = domain + "/order/querySingleAction.do?method=init";
 		
-		//Check had login, redirect to query url
-		if( window.parent && window.parent.$ && false) 
+		// 如果用户已经登录，则自动跳转到预定页面
+		if( window.parent && window.parent.$ ) 
 		{
 			var str = window.parent.$("#username_ a").attr("href");
-			if( str && str.indexOf("sysuser/user_info") != -1 )
+			if( str && str.indexOf("editMemberAction.do?method=initEdit") != -1 )
 			{
 				window.location.href = queryurl;
 				return;
