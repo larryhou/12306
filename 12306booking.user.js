@@ -408,7 +408,7 @@ withjQuery(function($, window)
 				if(ticketType[i-1]) // 有复选框的列如果有票则高亮显示
 				{
 					var info = $.trim($(e).text());
-					if(info != "--" && info != "无") 
+					if(info != "--" && info != "无" && info != "*") 
 					{
 						hasTicket = true;
 						highLightCell(e);
