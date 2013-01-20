@@ -31,7 +31,7 @@
 
 // ==UserScript==  
 // @name         12306 Booking Assistant
-// @version		 1.4.2
+// @version		 2.0.0
 // @author       zzdhidden@gmail.com
 // @namespace    https://github.com/zzdhidden
 // @description  12306 订票助手之(自动登录，自动查票，自动订单)
