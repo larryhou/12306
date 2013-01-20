@@ -51,7 +51,7 @@ function withjQuery(callback, safe)
 		{
 			var cb = document.createElement("script");
 			cb.type = "text/javascript";
-			cb.textContent = "jQuery.noConflict();(" + callback.toString() + ")(jQuery.sub(), window);";
+			cb.textContent = "jQuery.noConflict();(" + callback.toString() + ")(jQuery, window);";
 			script.addEventListener('load', function() 
 			{
 				document.head.appendChild(cb);
