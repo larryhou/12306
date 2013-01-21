@@ -955,7 +955,12 @@ withjQuery(function($, window)
 				url: domain + "/confirmPassengerAction.do?method=confirmSingleForQueue",
 				dataType: "json",
 				timeout: 5000,
-				type: "POST",			
+				type: "POST",		
+				beforeSend: function(xhr) 
+				{
+					// 伪装IE浏览器
+					xhr.setRequestHeader("User-Agent", "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)");
+				},	
 				success: function( data )
 				{
 					if(!data)
@@ -1009,6 +1014,11 @@ withjQuery(function($, window)
 					type: "GET",
 					data: {tourFlag: tourType},
 					dataType: "json",
+					beforeSend: function(xhr) 
+					{
+						// 伪装IE浏览器
+						xhr.setRequestHeader("User-Agent", "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)");
+					},
 					success: function(data)
 					{
 						if (!data || !data.orderId)
@@ -1037,6 +1047,11 @@ withjQuery(function($, window)
 			{
 				url: domain + "confirmPassengerAction.do?method=payOrder&orderSequence_no=" + id,
 				type: "POST",
+				beforeSend: function(xhr) 
+				{
+					// 伪装IE浏览器
+					xhr.setRequestHeader("User-Agent", "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)");
+				},
 				success: function(msg)
 				{						
 					var match = msg && msg.match(/org\.apache\.struts\.taglib\.html\.TOKEN['"]?\s*value=['"]?([^'">]+)/i);
