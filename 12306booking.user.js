@@ -952,7 +952,7 @@ withjQuery(function($, window)
 			window.$("#confirmPassenger")
 			.ajaxSubmit(
 			{
-				url: domain + "/confirmPassengerAction.do?method=confirmSingleForQueueOrder",
+				url: domain + "/confirmPassengerAction.do?method=confirmSingleForQueue",
 				dataType: "json",
 				timeout: 5000,
 				type: "POST",			
