@@ -848,8 +848,8 @@ withjQuery(function($, window)
 		// 订票操作
 		var userInfoUrl = domain + '/myOrderAction.do?method=queryMyOrderNotComplete&leftmenu=Y&fakeParent=true';
 		
-		var tourType = "dc";
-		var count = 1, freq = 1000, doing = false, timer, $msg = $("<div style='padding-left:470px;'></div>");
+		var button = $("button:contains('提交订单')");
+		button.attr("onclick", "queueOrder(" + button.attr("onclick").match(/('\w+')\)/)[1] + ")");
 		
 		// 监听xhr返回
 		window.$(document).ajaxComplete(function(evt, xhr, settings)
@@ -869,8 +869,7 @@ withjQuery(function($, window)
 				}
 				else
 				{
-					parent.closePopWin();
-					retryOrder(msg);
+					console.log(msg);
 				}
 			}
 			else
@@ -884,6 +883,7 @@ withjQuery(function($, window)
 				}
 
 				notify("恭喜，车票预订成！", null, true);
+
 				setTimeout(function() 
 				{
 					if( confirm("车票预订成，去付款？") )
@@ -899,98 +899,5 @@ withjQuery(function($, window)
 				
 			console.log(count + "#" + settings.url + "#" + xhr.response);
 		});
-		
-		// 提交订单：只处理单程票
-		function submitOrder()
-		{			
-			queueOrder("dc");
-			
-		};
-		
-		// 重新提交订单
-		function retryOrder(msg)
-		{
-			if( !doing ) return;
-			
-			count ++;
-			$msg.html("(" + count + ")次自动提交中... " + (msg || ""));
-			
-			clearTimeout(timer);
-			timer = setTimeout(submitOrder, 1000);
-		}
-		
-		// 停止自动提交订单
-		function stop ( msg )
-		{
-			doing = false;
-			$msg.html("(" + count + ")次 已停止");
-			$('#refreshButton').html("自动提交订单");
-			
-			clearTimeout( timer );
-			msg && alert( msg );
-		}
-		
-		function reloadSeat()
-		{
-			$("select[name$='_seat']").html('<option value="M" selected="">一等座</option><option value="O" selected="">二等座</option><option value="1">硬座</option><option value="3">硬卧</option><option value="4">软卧</option>');
-		}
-		//初始化
-
-		if($("#refreshButton").size()<1)
-		{
-
-			//	//重置后加载所有席别
-			//	$("select[name$='_seat']").each(function(){this.blur(function(){
-			//		alert(this.attr("id") + "blur");
-			//	})});
-			////初始化所有席别
-			//$(".qr_box :checkbox[name^='checkbox']").each(function(){$(this).click(reloadSeat)});
-			//reloadSeat();
-
-			//日期可选
-			$("td.bluetext:first").html('<input type="text" name="orderRequest.train_date" value="' +$("#start_date").val()+'" id="startdatepicker" style="width: 150px;" class="input_20txt"  onfocus="WdatePicker({firstDayOfWeek:1})" />');
-			$("#start_date").remove();
-			 
-			$(".tj_btn").append($("<a style='padding: 5px 10px; background: #2CC03E;border-color: #259A33;border-right-color: #2CC03E;border-bottom-color:#2CC03E;color: white;border-radius: 5px;text-shadow: -1px -1px 0 rgba(0, 0, 0, 0.2);'></a>").attr("id", "refreshButton").html("自动提交订单").click(function() 
-			{
-				//alert('开始自动提交订单，请点确定后耐心等待！');
-				if( this.innerHTML.indexOf("自动提交订单") == -1 )
-				{
-					//doing
-					stop();
-				} 
-				else 
-				{
-					if( window.submit_form_check && !window.submit_form_check("confirmPassenger") ) 
-					{
-						return;
-					}
-					
-					count = 0;
-					doing = true;
-					this.innerHTML = "停止自动提交";
-					
-					submitOrder();
-				}
-				return false;
-			}));
-			$(".tj_btn").append("自动提交频率：")
-				.append($("<select id='freq'><option value='50' >频繁</option><option value='500' selected='' >正常</option><option value='2000' >缓慢</option></select>").change(function() 
-				{
-					freq = parseInt( $(this).val() );
-				}))
-				.append($msg);
-			//alert('如果使用自动提交订单功能，请在确认订单正确无误后，再点击自动提交按钮！');
-			
-			//铁道路修改验证码规则后 优化 by 冯岩
-			$("#rand").bind('keydown', function (e) 
-			{
-				var key = e.which;
-				if (key == 13) 
-				{
-					$("#refreshButton").click();
-				}
-			});
-		}
 	};
 }, true);
