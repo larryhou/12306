@@ -128,7 +128,6 @@ withjQuery(function($, window)
 	{
 		if( window.location.href.indexOf(match) != -1 ) 
 		{
-			console.log(window.location.href);
 			fn();
 		};
 	}
@@ -648,8 +647,8 @@ withjQuery(function($, window)
 	}
 
 	route("querySingleAction.do", query);
-	route("myOrderAction.do?method=resign", query);
-	route("confirmPassengerResignAction.do?method=cancelOrderToQuery", query);
+	//route("myOrderAction.do?method=resign", query);
+	//route("confirmPassengerResignAction.do?method=cancelOrderToQuery", query);
 	
 	route("loginAction.do?method=init", function() 
 	{
@@ -820,7 +819,7 @@ withjQuery(function($, window)
 	});
 	
 	route("confirmPassengerAction.do", submit);
-	route("confirmPassengerResignAction.do", submit);
+	//route("confirmPassengerResignAction.do", submit);
 	
 	// 订票提交处理
 	function submit() 
@@ -852,270 +851,82 @@ withjQuery(function($, window)
 		var tourType = "dc";
 		var count = 1, freq = 1000, doing = false, timer, $msg = $("<div style='padding-left:470px;'></div>");
 		
-		// 刷新验证码
-		function refreshCode()
+		// 监听xhr返回
+		window.$(document).ajaxComplete(function(evt, xhr, settings)
 		{
-			$("#img_rrand_code").click();
-			$("#rand").focus().select();
-			stop();
-		}
-		
-		// 校验订单信息
-		function checkOrderInfo()
-		{
-			window.$("#confirmPassenger").ajaxSubmit(
+			if (settings.url.indexOf("confirmPassengerAction.do?method=confirmSingleForQueue") < 0) return;
+				
+			var data = JSON.parse(xhr.response);
+			var msg = data.errMsg;
+				
+			if (msg != "Y")
+			{
+				if (msg.indexOf("验证码") >= 0)
 				{
-					url: domain + "/confirmPassengerAction.do?method=checkOrderInfo&rand=" + $("#rand").val(),
-					type: "POST",
-					data: {tFlag: tourType},
-					dataType: "json",
-					success: function(data)
-					{
-						var msg = data.errMsg;
-						if (msg != "Y")
-						{
-							if (msg.indexOf("验证码") >= 0)
-							{
-								alert(msg);								
-								refreshCode();
-							}
-							else
-							{
-								console.log(msg);
-								checkOrderInfo();
-							}
-						}
-						else
-						{
-							requestQueue();
-						}
-						
-						if (data.checkHuimd != "Y")
-						{
-							console.log("取消次数过多，订票请求不被受理");
-						}
-						else
-						if (data.check608 != "Y")
-						{
-							console.log("一日一车一证票制");
-						}
-					},
-					error: function()
-					{
-						console.log("校验订单信息遇到网络错误！");
-						checkOrderInfo();
-					}
-				});
-		}
-		
-		// 检查订单队列
-		function requestQueue()
-		{
-			$.ajax({
-	            url: domain + '/confirmPassengerAction.do?method=getQueueCount',
-	            type: "GET",
-	            data: 
-				{
-	                train_date: $("#start_date").val(),
-	                train_no: $("#train_no").val(),
-	                station: $("#station_train_code").val(),
-	                seat: $("#passenger_1_seat").val(),
-	                from: $("#from_station_telecode").val(),
-	                to: $("#to_station_telecode").val(),
-	                ticket: $("#left_ticket").val()
-	            },
-	            dataType: "json",
-				success: function (data)
-				{
-					if (data.op_2)
-					{
-						console.log("排队人数过多");
-					}
-					else
-					{
-						console.log("还有余票：" + data.countT + "张");
-						submitOrder();
-					}
-				},
-				error: function()
-				{
-					console.log("检查队列遇到网络错误！");
-					requestQueue();
+					$("#img_rrand_code").click();
+					$("#rand").focus();
+					stop();
 				}
-			});
-		}
+				else
+				{
+					parent.closePopWin();
+					retryOrder(msg);
+				}
+			}
+			else
+			{
+				var audio;
+				if( window.Audio ) 
+				{
+					audio = new Audio("http://www.w3school.com.cn/i/song.ogg");
+					audio.loop = true;
+					audio.play();
+				}
+
+				notify("恭喜，车票预订成！", null, true);
+				setTimeout(function() 
+				{
+					if( confirm("车票预订成，去付款？") )
+					{
+						window.location.replace(userInfoUrl);
+					} 
+					else 
+					{
+						if(audio && !audio.paused) audio.pause();
+					}
+				}, 100);
+			}
+				
+			console.log(count + "#" + settings.url + "#" + xhr.response);
+		});
 		
 		// 提交订单：只处理单程票
 		function submitOrder()
-		{
-			timer = null;
-			window.$("#confirmPassenger")
-			.ajaxSubmit(
-			{
-				url: domain + "/confirmPassengerAction.do?method=confirmSingleForQueue",
-				dataType: "json",
-				timeout: 5000,
-				type: "POST",		
-				beforeSend: function(xhr) 
-				{
-					// 伪装IE浏览器
-					xhr.setRequestHeader("User-Agent", "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)");
-				},	
-				success: function( data )
-				{
-					if(!data)
-					{
-						retryOrder("");
-						return;
-					}
-					
-					if (data.errMsg != "Y")
-					{						
-						var msg = data.errMsg;
-						if( msg.indexOf('未处理的订单') > -1 )
-						{
-							notify("有未处理的订单!");
-							window.location.replace(userInfoUrl);
-							return;
-						}		
-
-						// 更新验证码，用户重新输入验证
-						if( msg.indexOf( "验证码" ) > -1 ) 
-						{
-							alert(msg);	
-							refreshCode();
-						}
-						else
-						{
-							retryOrder(msg);
-						}
-					}
-					else
-					{
-						console.log("订单服务器占位成功！" + new Date());
-						waitOrder();
-					}
-				},
-				error: function()
-				{
-					retryOrder("网络错误");
-				}
-			});
+		{			
+			queueOrder("dc");
+			
 		};
-		
-		var id;
-		
-		// 检验订单是否成功
-		function waitOrder()
-		{
-			$.ajax(
-				{
-					url: domain + "/myOrderAction.do?method=queryOrderWaitTime",
-					type: "GET",
-					data: {tourFlag: tourType},
-					dataType: "json",
-					beforeSend: function(xhr) 
-					{
-						// 伪装IE浏览器
-						xhr.setRequestHeader("User-Agent", "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)");
-					},
-					success: function(data)
-					{
-						if (!data || !data.orderId)
-						{
-							waitOrder();
-						}
-						else
-						{
-							console.log("订单号创建成功！" + new Date());
-							id = data.orderId;
-							createOrder();
-						}
-					},
-					error: function()
-					{
-						waitOrder();
-					}					
-				});
-		}
-		
-		// 生成支付订单
-		function createOrder()
-		{
-			window.$("#confirmPassenger")
-			.ajaxSubmit(
-			{
-				url: domain + "confirmPassengerAction.do?method=payOrder&orderSequence_no=" + id,
-				type: "POST",
-				beforeSend: function(xhr) 
-				{
-					// 伪装IE浏览器
-					xhr.setRequestHeader("User-Agent", "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)");
-				},
-				success: function(msg)
-				{						
-					var match = msg && msg.match(/org\.apache\.struts\.taglib\.html\.TOKEN['"]?\s*value=['"]?([^'">]+)/i);
-					var newToken = match && match[1];
-					if(newToken) 
-					{
-						$("input[name='org.apache.struts.taglib.html.TOKEN']").val(newToken);
-					}
-
-					if( msg.indexOf('payButton') > -1 ) 
-					{
-						console.log("生成支付订单：" + new Date());
-							
-						var audio;
-						if( window.Audio ) 
-						{
-							audio = new Audio("http://www.w3school.com.cn/i/song.ogg");
-							audio.loop = true;
-							audio.play();
-						}
-							
-						notify("恭喜，车票预订成！", null, true);
-								
-						setTimeout(function() 
-						{
-							if( confirm("车票预订成，去付款？") )
-							{
-								window.location.replace(userInfoUrl);
-							} 
-							else 
-							{
-								if(audio && !audio.paused) audio.pause();
-							}
-						}, 100);
-					}						
-				},
-				error: function()
-				{
-					console.log("生成订单遇到网络错误：" + new Date());
-					createOrder();
-				}
-					
-			});
-		}
 		
 		// 重新提交订单
 		function retryOrder(msg)
 		{
-			console.log("retryOrder: " + msg + new Date());
 			if( !doing ) return;
 			
 			count ++;
 			$msg.html("(" + count + ")次自动提交中... " + (msg || ""));
-			timer = setTimeout( submitOrder, freq || 50 );
+			
+			clearTimeout(timer);
+			timer = setTimeout(submitOrder, 1000);
 		}
 		
 		// 停止自动提交订单
-		function stop ( msg ) 
+		function stop ( msg )
 		{
 			doing = false;
 			$msg.html("(" + count + ")次 已停止");
 			$('#refreshButton').html("自动提交订单");
 			
-			timer && clearTimeout( timer );
+			clearTimeout( timer );
 			msg && alert( msg );
 		}
 		
