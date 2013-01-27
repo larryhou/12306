@@ -249,7 +249,7 @@ withjQuery(function($, window)
 					}
 					
 					// 发出广播消息
-					//onticketAvailable(); //report
+					onticketAvailable(); //report
 				}
 				else 
 				{
@@ -275,7 +275,7 @@ withjQuery(function($, window)
 		var doQuery = function() 
 		{
 			// 刷新次数显示
-			displayQueryTimes(queryTimes++);
+			displayQueryTimes(++queryTimes);
 			
 			firstRemove = true;
 			
@@ -400,14 +400,14 @@ withjQuery(function($, window)
 				if(!audio) 
 				{
 					audio = new Audio("http://www.w3school.com.cn/i/song.ogg");
-					audio.loop = true;
+					audio.loop = false;
 				}
 				audio.play();
-				notify("可以订票了！", null, true);
+				notify("可以订票了！", 3000, true);
 			} 
 			else 
 			{
-				notify("可以订票了！");
+				notify("可以订票了！", 3000);
 			}
 		}
 		
@@ -458,12 +458,15 @@ withjQuery(function($, window)
 						if(audio && !audio.paused) audio.pause();
 						isAutoQueryEnabled = true;
 						doQuery();
+						
+						displayQueryTimes(queryTimes = 1);
 						this.innerHTML="停止刷票";
 					}
 					else 
 					{
                         __unset_autoIncreaseDays();
 						isAutoQueryEnabled = false;
+						
 						this.innerHTML="开始刷票";
 					}
 				})
