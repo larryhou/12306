@@ -41,43 +41,10 @@
 
 function withjQuery(callback, safe)
 {
-	if(typeof(jQuery) == "undefined") 
-	{
-		var script = document.createElement("script");
-		script.type = "text/javascript";
-		script.src = "https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js";
-
-		if(safe) 
-		{
-			var cb = document.createElement("script");
-			cb.type = "text/javascript";
-			cb.textContent = "jQuery.noConflict();(" + callback.toString() + ")(jQuery, window);";
-			script.addEventListener('load', function() 
-			{
-				document.head.appendChild(cb);
-			});
-		}
-		else 
-		{
-			var dollar = undefined;
-			if(typeof($) != "undefined") dollar = $;
-			script.addEventListener('load', function() 
-			{
-				jQuery.noConflict();
-				$ = dollar;
-				callback(jQuery, window);
-			});
-		}
-		document.head.appendChild(script);
-	} 
-	else 
-	{
-		setTimeout(function() 
-		{
-			//Firefox supports
-			callback(jQuery, typeof unsafeWindow === "undefined" ? window : unsafeWindow);
-		}, 30);
-	}
+	var script = document.createElement("script");
+	script.type = "text/javascript";
+	script.textContent = "(" + callback.toString() + ")(window.jQuery, window);";
+	document.head.appendChild(script);
 }
 
 withjQuery(function($, window)
@@ -282,7 +249,7 @@ withjQuery(function($, window)
 					}
 					
 					// 发出广播消息
-					onticketAvailable(); //report
+					//onticketAvailable(); //report
 				}
 				else 
 				{
@@ -647,176 +614,7 @@ withjQuery(function($, window)
 	}
 
 	route("querySingleAction.do", query);
-	//route("myOrderAction.do?method=resign", query);
-	//route("confirmPassengerResignAction.do?method=cancelOrderToQuery", query);
 	
-	route("loginAction.do?method=init", function() 
-	{
-		if( !window.location.href.match( /init$/i ) ) 
-		{
-			return;
-		}
-		
-		var domain = "https://dynamic.12306.cn/otsweb";
-		
-		var url = domain + "/loginAction.do?method=login";
-		var queryurl = domain + "/order/querySingleAction.do?method=init";
-		
-		// 如果用户已经登录，则自动跳转到预定页面
-		if( window.parent && window.parent.$ ) 
-		{
-			var str = window.parent.$("#username_ a").attr("href");
-			if( str && str.indexOf("editMemberAction.do?method=initEdit") != -1 )
-			{
-				window.location.href = queryurl;
-				return;
-			}
-		}	
-		
-		var setup = false;
-		$("#img_rrand_code").click(function()
-		{
-			setup = false;
-			this.src = domain + "/passCodeAction.do?rand=sjrand&" + Math.random();
-		});	
-		
-		// 获取随机码
-		function requestRand()
-		{
-			$.ajax({
-				type: "POST", 
-				url: domain + "/loginAction.do?method=loginAysnSuggest", 
-				dataType: "json", 
-				success: function(data)
-				{
-					if (data.randError != "Y")
-					{
-						requestRand();
-						console.log("randErr:" + data.randError);
-					}
-					else
-					{
-						setup = true;
-						$("#loginRand").val(data.loginRand);
-						  
-						submitForm();
-					}
-				}
-			});
-		}
-
-		// 提交用户表单
-		function submitForm()
-		{
-			var submitUrl = url;
-			$.ajax({
-				type: "POST",
-				url: submitUrl,
-				data: 
-				{
-					"loginUser.user_name": $("#UserName").val()
-				  , "user.password": $("#password").val()
-				  , "randCode": $("#randCode").val()
-				  , "loginRand": $("#loginRand").val()
-				  , "refundLogin": "N"
-				  , "refundFlag": "Y"
-				},
-				beforeSend: function( xhr ) 
-				{
-					try
-					{
-						xhr.setRequestHeader('X-Requested-With', {toString: function(){ return ''; }});
-						xhr.setRequestHeader('Cache-Control', 'max-age=0');
-						xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8');
-					}catch(e){};
-				},
-				timeout: 30000,
-				//cache: false,
-				//async: false,
-				success: function(msg)
-				{
-					//密码输入错误
-					//您的用户已经被锁定
-					if ( msg.indexOf('请输入正确的验证码') > -1 ) 
-					{
-						alert('请输入正确的验证码！');
-					} 
-					else 
-					if ( msg.indexOf('当前访问用户过多') > -1 )
-					{
-						reLogin();
-					} 
-					else 
-					if( msg.match(/var\s+isLogin\s*=\s*true/i) ) 
-					{
-						notify('登录成功，开始查询车票吧！');
-						window.location.replace( queryurl );
-					} 
-					else 
-					{
-						msg = msg.match(/var\s+message\s*=\s*"([^"]*)/);
-						if( msg && msg[1] ) 
-						{
-							alert( msg && msg[1] );
-						} 
-						else 
-						{
-							reLogin();
-						}
-					}
-				},
-				error: function(msg)
-				{
-					reLogin();
-				}
-			});
-		}
-
-		var tid;
-		var count = 1;
-		function reLogin()
-		{
-			count ++;
-			$('#refreshButton').html("("+count+")次登录中...");
-			
-			// 验证码不变，2秒后重新提交请求
-			tid = setTimeout(submitForm, 2000);
-		}
-		
-		var running;
-		
-		// 添加绿色自动登录按钮入口
-		$("#subLink").after($("<a href='#' class='button_a' style='padding: 0px 10px 0px; background: #2CC03E;border-color: #259A33;border-right-color: #2CC03E;border-bottom-color:#2CC03E;color: white;border-radius: 5px;text-shadow: -1px -1px 0 rgba(0, 0, 0, 0.2);'/>").attr("id", "refreshButton").html("自动登录").click(function() 
-		{
-			count = 1;
-			
-			if (running)
-			{
-				running = false;
-				$(this).html("暂停登陆");
-				
-				clearTimeout(tid);
-			}
-			else
-			{
-				running = true;
-				$(this).html("自动登录");
-				
-				if (setup)
-				{
-					submitForm();
-				}
-				else
-				{
-					requestRand();
-				}
-			}
-						
-			return false;
-		}));
-
-		console.log('如果使用自动登录功能，请输入用户名、密码及验证码后，点击自动登录，系统会尝试登录，直至成功！');
-	});
 	
 	route("confirmPassengerAction.do", submit);
 	//route("confirmPassengerResignAction.do", submit);
@@ -829,27 +627,22 @@ withjQuery(function($, window)
 		 * From: https://gist.github.com/1577671
 		 * Author: kevintop@gmail.com  
 		 */	
-		 window.$(document).ajaxComplete(function()
+		 window.$(document).ajaxComplete(function(evt, xhr, settings)
 		 {			 
- 			// 自动选择第一个未选择用户作为默认购票用户	
- 			if( !$("input._checkbox_class:checked").length ) 
- 			{
- 				try
- 				{
- 					//Will failed in IE
- 					$("input._checkbox_class:first").click();
- 				}
- 				catch(e){};
- 			}
+			 if (settings.url.indexOf("confirmPassengerAction.do?method=getpassengerJson") < 0) return;
+			 $("input._checkbox_class:first").click();
 		 });
 		 
+		 var count = 1;
 		 var domain = "https://dynamic.12306.cn/otsweb/order";
 		
 		// 订票操作
 		var userInfoUrl = domain + '/myOrderAction.do?method=queryMyOrderNotComplete&leftmenu=Y&fakeParent=true';
 		
-		var button = $("button:contains('提交订单')");
-		button.attr("onclick", "queueOrder(" + button.attr("onclick").match(/('\w+')\)/)[1] + ")");
+		$(".tj_btn").append($("<a href='#' class='button_a' style='padding: 0px 15px 4px;height:23px; background: #2CC03E;border-color: #259A33;border-right-color: #2CC03E;border-bottom-color:#2CC03E;color: white;border-radius: 5px;text-shadow: -1px -1px 0 rgba(0, 0, 0, 0.2);'/>").attr("id", "refreshButton").html("快速提交订单").click(function()
+		{
+			queueOrder('dc');
+		}));
 		
 		// 监听xhr返回
 		window.$(document).ajaxComplete(function(evt, xhr, settings)
